@@ -12,6 +12,24 @@
             max-height: 50vh; /* Limit height to 50% of viewport height */
             width: 100%; /* Ensure the width is 100% */
         }
+
+        /* Style for the red popup */
+        #errorPopup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: red;
+            color: white;
+            text-align: center;
+            font-size: 24px;
+            padding: 20px;
+            display: none; /* Hidden by default */
+            z-index: 9999;
+        }
+	* {
+		font-family: "Comic Sans MS", "Comic Sans", cursive;
+	}
     </style>
 </head>
 <body>
@@ -32,6 +50,9 @@
         <p id="countdown"></p>
     </div>
 
+    <!-- Error Popup -->
+    <div id="errorPopup">Unable to connect to server</div>
+
     <script>
         const ctx = document.getElementById('scoreboardGraph').getContext('2d');
         let chartInstance = null; // Keep track of the chart instance
@@ -51,7 +72,7 @@
             const remainingTime = endTime - now;
             
             if (remainingTime <= 0) {
-                document.getElementById('countdown').textContent = 'The scoreboard has ended.';
+                document.getElementById('countdown').textContent = 'The competition has ended.';
                 clearInterval(countdownInterval); // Clear the interval once the time is up
                 return;
             }
@@ -65,9 +86,13 @@
 
         // Function to fetch scores and update the chart
         const fetchScores = async () => {
+            const errorPopup = document.getElementById('errorPopup');
             try {
                 const res = await fetch('/api/scores');
                 const { scores, scoreHistory, endTime: serverEndTime } = await res.json();
+
+                // Hide the error popup if the fetch is successful
+                errorPopup.style.display = 'none';
 
                 // Ensure endTime is being correctly set
                 if (!endTime && serverEndTime) {
@@ -154,10 +179,10 @@
 
             } catch (err) {
                 console.error('Error fetching scores:', err);
+                // Show the error popup if the fetch fails
+                errorPopup.style.display = 'block';
             }
         };
-
-
 
         fetchScores();
         calculateRemainingTime();
@@ -168,8 +193,8 @@
         }, 5000);
 
         remainingTime = setInterval(() => {
-calculateRemainingTime();
-}, 500);
+            calculateRemainingTime();
+        }, 500);
     </script>
 </body>
 </html>
