@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit a Flag</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin: 20px auto;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #response {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Submit a Flag</h1>
+    <form id="flagForm">
+        <label for="team">Team Name:</label>
+        <input type="text" id="team" name="team" required>
+        <label for="flag">Flag:</label>
+        <input type="text" id="flag" name="flag" required>
+        <button type="submit">Submit</button>
+    </form>
+    <p id="response"></p>
+    <script>
+        const flagForm = document.getElementById('flagForm');
+        const response = document.getElementById('response');
+
+        flagForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const team = document.getElementById('team').value;
+            const flag = document.getElementById('flag').value;
+
+            try {
+                const res = await fetch('/api/submit-flag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ team, flag }),
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    response.textContent = result.message;
+                    response.style.color = 'green';
+                } else {
+                    response.textContent = result.message;
+                    response.style.color = 'red';
+                }
+            } catch (err) {
+                response.textContent = 'Error submitting flag.';
+                response.style.color = 'red';
+            }
+        });
+    </script>
+    <p><a href="/">Back to Scoreboard</a></p>
+</body>
+</html>
