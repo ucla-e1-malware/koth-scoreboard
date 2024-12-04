@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        /* Make the canvas take 50% of the viewport height */
+        #scoreboardGraph {
+            max-height: 50vh; /* Limit height to 50% of viewport height */
+            width: 100%; /* Ensure the width is 100% */
+        }
+    </style>
+</head>
+<body>
+    <h1>Scoreboard</h1>
+
+    <!-- Canvas for the chart -->
+    <canvas id="scoreboardGraph"></canvas>
+
+    <!-- Section for the list of scores -->
+    <h2>Current Scores</h2>
+    <ul id="scoreList"></ul>
+
+    <!-- Link to the flag submission page -->
+    <p><a href="/flag">Submit a Flag</a></p>
+
+    <div>
+        <h2>Time Remaining</h2>
+        <p id="countdown"></p>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('scoreboardGraph').getContext('2d');
+        let chartInstance = null; // Keep track of the chart instance
+        let endTime = null; // Will hold the end time
+        let countdownInterval = null; // To store the reference to the countdown interval
+
+        // Predefined set of colors for teams
+        const colors = [
+            "#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#FF9633", "#33FFF9", 
+            "#9B33FF", "#33FFBD", "#FF9133", "#33A1FF"
+        ];
+
+        // Function to calculate remaining time
+        function calculateRemainingTime() {
+            if (!endTime) return;
+            const now = new Date();
+            const remainingTime = endTime - now;
+            
+            if (remainingTime <= 0) {
+                document.getElementById('countdown').textContent = 'The scoreboard has ended.';
+                clearInterval(countdownInterval); // Clear the interval once the time is up
+                return;
+            }
+
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+            document.getElementById('countdown').textContent = `Time remaining: ${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        // Function to fetch scores and update the chart
+        const fetchScores = async () => {
+            try {
+                const res = await fetch('/api/scores');
+                const { scores, scoreHistory, endTime: serverEndTime } = await res.json();
+
+                // Ensure endTime is being correctly set
+                if (!endTime && serverEndTime) {
+                    endTime = new Date(serverEndTime);
+                }
+
+                // Create a set of all timestamps from scoreHistory
+                const allTimestamps = Array.from(new Set(scoreHistory.map(entry => new Date(entry.time).getTime())));
+
+                // Prepare data for the graph
+                const datasets = scores.map((teamData, index) => {
+                    const teamHistory = scoreHistory.filter(e => e.team === teamData.team);
+                    const dataPoints = [];
+                    let lastScore = 0;
+                    let lastTimestamp = null;
+
+                    // Go through all timestamps, and make sure to handle missing scores
+                    allTimestamps.forEach(timestamp => {
+                        const currentTime = new Date(timestamp);
+                        const teamScoreAtTime = teamHistory.find(entry => new Date(entry.time).getTime() === timestamp);
+
+                        if (teamScoreAtTime) {
+                            // If a score is found for this timestamp, use it
+                            lastScore = teamScoreAtTime.score;
+                        }
+                        // Add the score (either updated or last known score)
+                        dataPoints.push({ x: currentTime, y: lastScore });
+                    });
+
+                    // Return dataset for this team
+                    return {
+                        label: teamData.team,
+                        data: dataPoints,
+                        borderColor: colors[index % colors.length],  // Cycle through the colors
+                        fill: false
+                    };
+                });
+
+                // Destroy the previous chart if it exists
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                // Draw the graph with animations disabled and consistent coloring
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets
+                    },
+                    options: {
+                        animation: {
+                            duration: 0 // Disable animation
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',  // Set the x-axis as time
+                                time: {
+                                    unit: 'second'  // Show time in seconds
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,  // Force whole numbers only on y-axis
+                                    precision: 0   // Remove decimal places
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Update the list of scores below the graph, sorted by score in descending order
+                const scoreList = document.getElementById('scoreList');
+                scoreList.innerHTML = ''; // Clear previous scores
+
+                // Sort teams by score and display their flags
+                const sortedScores = scores.sort((a, b) => b.score - a.score); // Sort by score in descending order
+
+                sortedScores.forEach((teamData) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${teamData.team}: ${teamData.score} points, ${teamData.flagsSubmitted} flags submitted`;
+                    scoreList.appendChild(li);
+                });
+
+            } catch (err) {
+                console.error('Error fetching scores:', err);
+            }
+        };
+
+
+
+        fetchScores();
+        calculateRemainingTime();
+        // Initialize countdown interval and fetch scores every second
+        countdownInterval = setInterval(() => {
+            fetchScores();
+            calculateRemainingTime();
+        }, 5000);
+
+        remainingTime = setInterval(() => {
+calculateRemainingTime();
+}, 500);
+    </script>
+</body>
+</html>
