@@ -7,7 +7,7 @@ const app = express();
 const PORT = 80; // Change to port 80
 
 // Define the end time as a constant at the start of the file (ISO string format)
-const END_TIME = '2024-12-04T08:43:00Z'; // Example: set the end time to December 31, 2024 at 11:59:59 PM UTC
+const END_TIME = '2024-12-05T02:00:00Z'; // Example: set the end time to December 31, 2024 at 11:59:59 PM UTC
 const endTime = new Date(END_TIME); // Convert it into a Date object
 const refreshRate = 30000;
 const remoteIp = "10.138.0.4";
