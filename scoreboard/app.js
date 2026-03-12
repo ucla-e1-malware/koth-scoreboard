@@ -40,14 +40,26 @@ function initializeFlagsForTeam(team) {
 // Function to fetch data from the `/king.txt` service
 async function fetchTeam() {
     try {
-        // Fetch from 10.138.0.2
+        // Fetch from the remote service
         const response = await axios.get(`http://${remoteIp}:9999/`);
-        let team = response.data.trim().toLowerCase(); // Convert team name to lowercase
-        if (team && !isCompetitionEnded()) {
-            scores[team] = (scores[team] || 0) + 1;
-            initializeFlagsForTeam(team);
-            scoreHistory.push({ time: new Date().toISOString(), team, score: scores[team] });
-            saveDataToDisk(); // Save data on every update
+        const data = response.data.trim();
+        
+        if (data && !isCompetitionEnded()) {
+            // Split by newlines and process each team
+            const teams = data.split('\n')
+                .map(team => team.trim().toLowerCase())
+                .filter(team => team.length > 0); // Remove empty lines
+            
+            // Award points to each team listed
+            for (const team of teams) {
+                scores[team] = (scores[team] || 0) + 1;
+                initializeFlagsForTeam(team);
+                scoreHistory.push({ time: new Date().toISOString(), team, score: scores[team] });
+            }
+            
+            if (teams.length > 0) {
+                saveDataToDisk(); // Save data only if there were valid teams
+            }
         }
     } catch (error) {
         console.error('Error fetching team:', error.message);
