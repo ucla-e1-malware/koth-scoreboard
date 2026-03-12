@@ -1,0 +1,18 @@
+# Scoreboard Configuration
+# Copy this file to config.yaml and modify values as needed
+
+# Server configuration
+port: 80
+
+# Competition settings  
+end_time: "2024-12-05T02:00:00Z"  # ISO string format - when competition ends
+refresh_rate: 30000               # How often to fetch team data (milliseconds)
+
+# Remote server settings
+remote_ip: "10.138.0.4"          # IP address of the king.txt service
+
+# Flag configuration
+valid_flags:
+  FLAG1: 10    # Flag name and point value
+  FLAG2: 20
+  FLAG3: 30

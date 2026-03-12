@@ -2,15 +2,27 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs'); // Used for file I/O
+const yaml = require('js-yaml');
+
+// Load configuration from YAML file
+let config;
+try {
+    const configFile = fs.readFileSync('config.yaml', 'utf8');
+    config = yaml.load(configFile);
+} catch (error) {
+    console.error('Error loading config.yaml:', error.message);
+    console.log('Please copy config.yaml.example to config.yaml and configure your settings');
+    process.exit(1);
+}
 
 const app = express();
-const PORT = 80; // Change to port 80
+const PORT = config.port;
 
-// Define the end time as a constant at the start of the file (ISO string format)
-const END_TIME = '2024-12-05T02:00:00Z'; // Example: set the end time to December 31, 2024 at 11:59:59 PM UTC
+// Define the end time from config
+const END_TIME = config.end_time;
 const endTime = new Date(END_TIME); // Convert it into a Date object
-const refreshRate = 30000;
-const remoteIp = "10.138.0.4";
+const refreshRate = config.refresh_rate;
+const remoteIp = config.remote_ip;
 
 // Middleware to parse JSON requests
 app.use(express.json());
@@ -20,12 +32,8 @@ let scores = {};
 let scoreHistory = [];
 let submittedFlags = {}; // Tracks flags submitted by teams
 
-// List of valid flags
-const validFlags = {
-    FLAG1: 10,
-    FLAG2: 20,
-    FLAG3: 30,
-};
+// List of valid flags from config
+const validFlags = config.valid_flags;
 
 // Initialize flag tracking for each team
 function initializeFlagsForTeam(team) {
